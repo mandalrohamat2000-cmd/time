@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Countdown Timer</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--text:#1b2030;--muted:#6b7285;--accent:#4f46e5;--box:#eef0ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--card:#1a1f33;--text:#eef0fa;--muted:#9aa2bd;--accent:#8b85ff;--box:#252b47}}
+:root[data-theme="dark"]{--bg:#0f1220;--card:#1a1f33;--text:#eef0fa;--muted:#9aa2bd;--accent:#8b85ff;--box:#252b47}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:var(--card);border-radius:20px;padding:24px;width:100%;max-width:460px;box-shadow:0 8px 30px rgba(0,0,0,.12);text-align:center}
+h1{font-size:1.4rem;margin:0 0 4px}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+.b{background:var(--box);border-radius:14px;padding:14px 4px}
+.n{font-size:2rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.l{font-size:.75rem;color:var(--muted)}
+.done{font-size:1.6rem;font-weight:700;color:var(--accent);margin:20px 0}
+details{text-align:left;margin-top:8px}
+summary{cursor:pointer;color:var(--muted);font-size:.9rem;text-align:center}
+label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px}
+input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--muted);background:var(--card);color:var(--text);font-size:1rem}
+button,a.btn{display:block;width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-size:1rem;font-weight:600;text-align:center;text-decoration:none;cursor:pointer}
+a.wa{background:#25d366}
+.now{font-size:.8rem;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1 id="title">⏳ Countdown</h1>
+  <div class="sub" id="sub"></div>
+  <div id="out"></div>
+  <a class="btn wa" id="wa" href="#" target="_blank" rel="noopener">WhatsApp-এ শেয়ার করো</a>
+  <details id="det">
+    <summary>⚙️ সময় বদলাও (নতুন টাইমার)</summary>
+    <label>নাম (যেমন: Exam)</label>
+    <input id="name" value="Exam" maxlength="30">
+    <label>তারিখ ও সময় (ভারতীয় সময় IST)</label>
+    <input id="dt" type="datetime-local">
+    <button id="set">টাইমার সেট করো</button>
+  </details>
+  <div class="now" id="now"></div>
+</div>
+<script>
+(function(){
+  var pad=function(n){return String(n).padStart(2,"0")};
+  var IST=5.5*3600000;
+  function fmt(ms){ // ms is real instant; show in IST
+    var d=new Date(ms+IST);
+    return d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate())+"T"+pad(d.getUTCHours())+":"+pad(d.getUTCMinutes());
+  }
+  function parts(s){ // "YYYY-MM-DDTHH:MM" in IST -> instant
+    var m=s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); if(!m) return null;
+    return Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5])-IST;
+  }
+  var target=null,label="Exam";
+  function load(){
+    var h=location.hash.replace("#","");
+    var m=h.match(/^t(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(?:-(.*))?$/);
+    if(m){
+      target=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5])-IST;
+      label=m[6]?m[6].replace(/-/g," "):"Timer";
+    }else{
+      // default: today 8:00 PM IST
+      var d=new Date(Date.now()+IST);
+      target=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),20,0)-IST;
+      if(target<Date.now()) target+=86400000;
+      label="Exam";
+    }
+    document.getElementById("title").textContent="⏳ "+label;
+    var dd=new Date(target+IST);
+    var hr=dd.getUTCHours(),ap=hr>=12?"PM":"AM",h12=hr%12||12;
+    document.getElementById("sub").textContent=pad(dd.getUTCDate())+"/"+pad(dd.getUTCMonth()+1)+"/"+dd.getUTCFullYear()+", "+h12+":"+pad(dd.getUTCMinutes())+" "+ap+" (IST)";
+    document.getElementById("dt").value=fmt(target);
+    document.getElementById("name").value=label;
+    var msg=label+" শুরু হতে আর কত সময় বাকি দেখো: "+location.href.split("#")[0]+"#t"+fmt(target).replace(/[-T:]/g,"")+(label?"-"+label.trim().replace(/[^A-Za-z0-9]+/g,"-"):"");
+    document.getElementById("wa").href="https://wa.me/?text="+encodeURIComponent(msg);
+  }
+  function tick(){
+    var diff=target-Date.now(),out=document.getElementById("out");
+    if(diff<=0){out.innerHTML='<div class="done">🎉 সময় হয়ে গেছে!</div>';}
+    else{
+      var s=Math.floor(diff/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),mi=Math.floor(s%3600/60),se=s%60;
+      out.innerHTML='<div class="grid">'+
+        [[d,"দিন"],[h,"ঘণ্টা"],[mi,"মিনিট"],[se,"সেকেন্ড"]].map(function(x){return '<div class="b"><div class="n">'+pad(x[0])+'</div><div class="l">'+x[1]+'</div></div>'}).join("")+'</div>';
+    }
+    var n=new Date(Date.now()+IST);
+    document.getElementById("now").textContent="এখন: "+pad(n.getUTCHours())+":"+pad(n.getUTCMinutes())+":"+pad(n.getUTCSeconds())+" IST";
+  }
+  document.getElementById("set").onclick=function(){
+    var t=parts(document.getElementById("dt").value); if(t===null) return;
+    var nm=document.getElementById("name").value.trim().replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    location.hash="t"+fmt(t).replace(/[-T:]/g,"")+(nm?"-"+nm:"");
+    load();tick();
+    document.getElementById("det").open=false;
+  };
+  window.addEventListener("hashchange",function(){load();tick()});
+  load();tick();setInterval(tick,250);
+})();
+</script>
+</body>
+</html>
